@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BridgeAfriport Intelligence Dashboard</title>
+<meta name="description" content="BridgeAfriport B2B lead intent filtering by Bridge Africa Port.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f7f4; --panel: #ffffff; --ink: #14201b; --muted: #5f6b65; --line: #e2e6e1;
+    --brand: #0f5c45; --brand-ink: #ffffff; --accent: #d89b2b;
+    --ok-bg: #e5f3ec; --ok: #116a47; --warn-bg: #fbf0dc; --warn: #8a5a08;
+    --bad-bg: #fbe7e5; --bad: #a3271d; --neutral-bg: #eef0ee; --neutral: #4c5752;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1412; --panel: #171e1b; --ink: #e8eee9; --muted: #95a39c; --line: #26302c;
+      --brand: #2fa77c; --brand-ink: #06120d; --accent: #e7b04a;
+      --ok-bg: #123325; --ok: #6fd7a8; --warn-bg: #3a2c10; --warn: #f0c46f;
+      --bad-bg: #3b1714; --bad: #f19388; --neutral-bg: #222a27; --neutral: #b4c0ba;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 Inter, system-ui, sans-serif; }
+  header { background: var(--brand); color: var(--brand-ink); padding: 18px 16px; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+  header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 0; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; letter-spacing: -.01em; }
+  .logo span.mark { width: 30px; height: 30px; border-radius: 8px; background: var(--accent); display: grid; place-items: center; color: #14201b; font-size: 15px; }
+  .logo small { display: block; font-weight: 500; font-size: 12px; opacity: .8; letter-spacing: 0; }
+  .budget { font-size: 13px; background: rgba(255,255,255,.14); padding: 6px 12px; border-radius: 999px; }
+  main { padding: 24px 0 48px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 20px; }
+  label { font-weight: 600; font-size: 13px; display: block; margin-bottom: 6px; }
+  textarea, input { width: 100%; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 8px; padding: 10px 12px; font: inherit; }
+  textarea { min-height: 150px; resize: vertical; font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; margin-top: 12px; }
+  .row .grow { flex: 1 1 220px; }
+  button { border: 0; border-radius: 8px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer; background: var(--brand); color: var(--brand-ink); }
+  button.secondary { background: var(--neutral-bg); color: var(--ink); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .notice { margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-size: 14px; display: none; }
+  .notice.show { display: block; }
+  .notice.err { background: var(--bad-bg); color: var(--bad); }
+  .notice.info { background: var(--warn-bg); color: var(--warn); }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .stat b { display: block; font-size: 24px; }
+  .stat span { color: var(--muted); font-size: 13px; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }
+  td.url { max-width: 260px; word-break: break-all; }
+  td.url a { color: var(--ink); }
+  td.url small { color: var(--muted); display: block; word-break: normal; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .p-high { background: var(--ok-bg); color: var(--ok); }
+  .p-med { background: var(--warn-bg); color: var(--warn); }
+  .p-none { background: var(--neutral-bg); color: var(--neutral); }
+  .p-bad { background: var(--bad-bg); color: var(--bad); }
+  .muted { color: var(--muted); }
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding-bottom: 24px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="logo"><span class="mark">B</span><div>BridgeAfriport<small>Intelligence Dashboard</small></div></div>
+    <div class="budget" id="budget">Daily budget: loading…</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card">
+    <label for="urls">Company URLs (one per line)</label>
+    <textarea id="urls" placeholder="acme-exports.com&#10;https://www.example-manufacturing.de"></textarea>
+    <div class="row">
+      <div class="grow">
+        <label for="key">Access key <span class="muted">(only if you set BRIDGE_ACCESS_KEY)</span></label>
+        <input id="key" type="password" autocomplete="off" placeholder="Saved in this browser only">
+      </div>
+      <button id="run">Scan leads</button>
+      <button id="csv" class="secondary" disabled>Export CSV</button>
+    </div>
+    <div class="notice" id="notice"></div>
+  </section>
+
+  <section class="stats">
+    <div class="stat"><b id="sTotal">0</b><span>Scanned</span></div>
+    <div class="stat"><b id="sHigh">0</b><span>High / medium intent</span></div>
+    <div class="stat"><b id="sFoot">0</b><span>Has African footprint</span></div>
+    <div class="stat"><b id="sFail">0</b><span>Failed</span></div>
+  </section>
+
+  <section class="card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Company</th><th>Intent</th><th>Footprint</th><th>Positive signals</th><th>Footprint signals</th><th>Engine</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="6" class="muted">Paste URLs above and click “Scan leads”.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<footer>BridgeAfriport · a Bridge Africa Port tool</footer>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const ENDPOINT = "/scrape";
+  const results = [];
+
+  const store = {
+    get(k) { try { return localStorage.getItem(k) || ""; } catch { return ""; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  };
+  $("key").value = store.get("bridgeafriport_key");
+  $("key").addEventListener("change", () => { store.set("bridgeafriport_key", $("key").value.trim()); refreshBudget(); });
+
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const withKey = (path) => {
+    const k = $("key").value.trim();
+    return k ? `${path}${path.includes("?") ? "&" : "?"}key=${encodeURIComponent(k)}` : path;
+  };
+
+  function notice(msg, kind = "err") {
+    const n = $("notice");
+    n.textContent = msg || "";
+    n.className = `notice ${msg ? "show " + kind : ""}`;
+  }
+
+  function setBudget(b) {
+    if (b) $("budget").textContent = `Daily budget: ${b.used_today} / ${b.daily_cap} used · ${b.remaining_today} left`;
+  }
+
+  async function refreshBudget() {
+    try {
+      const r = await fetch(withKey(`${ENDPOINT}?budget=1`));
+      const d = await r.json();
+      if (d.budget) setBudget(d.budget); else $("budget").textContent = "Daily budget: enter access key";
+    } catch { $("budget").textContent = "Daily budget: unavailable"; }
+  }
+
+  function intentPill(r) {
+    if (!r.ok) return `<span class="pill p-bad">ERROR</span>`;
+    if (r.intent === "EXCLUDE") return `<span class="pill p-bad">EXCLUDE</span>`;
+    if (r.intent === "HIGH INTENT") return `<span class="pill p-high">HIGH INTENT</span>`;
+    if (r.intent === "MEDIUM INTENT") return `<span class="pill p-med">MEDIUM INTENT</span>`;
+    return `<span class="pill p-none">NO SIGNAL</span>`;
+  }
+
+  function render() {
+    const tb = $("rows");
+    if (!results.length) return;
+    tb.innerHTML = results.map((r) => `
+      <tr>
+        <td class="url"><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a>${r.title ? `<small>${esc(r.title)}</small>` : ""}${!r.ok ? `<small>${esc(r.error)}</small>` : ""}</td>
+        <td>${r.pending ? `<span class="pill p-none">Scanning…</span>` : intentPill(r)}</td>
+        <td>${r.ok ? (r.tag === "HAS FOOTPRINT" ? `<span class="pill p-bad">HAS FOOTPRINT</span>` : `<span class="pill p-high">NONE FOUND</span>`) : "—"}</td>
+        <td>${esc((r.positive_signals || []).join(", ")) || "—"}</td>
+        <td>${esc((r.negative_signals || []).join(", ")) || "—"}</td>
+        <td class="muted">${esc(r.engine || "—")}</td>
+      </tr>`).join("");
+    const done = results.filter((r) => !r.pending);
+    $("sTotal").textContent = done.length;
+    $("sHigh").textContent = done.filter((r) => r.ok && /HIGH|MEDIUM/.test(r.intent)).length;
+    $("sFoot").textContent = done.filter((r) => r.ok && r.tag === "HAS FOOTPRINT").length;
+    $("sFail").textContent = done.filter((r) => !r.ok).length;
+    $("csv").disabled = !done.length;
+  }
+
+  async function run() {
+    const urls = [...new Set($("urls").value.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean))];
+    if (!urls.length) return notice("Paste at least one URL.");
+    notice("");
+    results.length = 0;
+    urls.forEach((url) => results.push({ url, pending: true }));
+    render();
+    $("run").disabled = true;
+
+    // One URL per request so the table fills in as each lead finishes
+    for (let i = 0; i < urls.length; i++) {
+      let row;
+      try {
+        const r = await fetch(withKey(ENDPOINT), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ urls: [urls[i]] }),
+        });
+        const d = await r.json();
+        if (d.budget) setBudget(d.budget);
+        row = d.results?.[0] || { url: urls[i], ok: false, error: d.error || `HTTP ${r.status}` };
+        if (r.status === 401) { notice(d.error); row = { url: urls[i], ok: false, error: d.error }; }
+        if (r.status === 429) {
+          notice(d.error, "info");
+          for (let j = i; j < urls.length; j++) results[j] = { url: urls[j], ok: false, error: d.error };
+          break;
+        }
+        if (row.error === "BridgeAfriport Data Engines Exhausted") notice(row.error);
+      } catch (e) {
+        row = { url: urls[i], ok: false, error: "Network error: " + e.message };
+      }
+      results[i] = row;
+      render();
+    }
+    render();
+    $("run").disabled = false;
+  }
+
+  function exportCsv() {
+    const head = ["url", "title", "intent", "footprint", "positive_signals", "footprint_signals", "engine", "error"];
+    const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lines = results.filter((r) => !r.pending).map((r) => [
+      r.url, r.title, r.ok ? r.intent : "ERROR", r.tag, (r.positive_signals || []).join("; "),
+      (r.negative_signals || []).join("; "), r.engine, r.error,
+    ].map(q).join(","));
+    const blob = new Blob([[head.join(","), ...lines].join("\n")], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `bridgeafriport-leads-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+  }
+
+  $("run").addEventListener("click", run);
+  $("csv").addEventListener("click", exportCsv);
+  refreshBudget();
+})();
+</script>
+</body>
+</html>
